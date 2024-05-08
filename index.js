@@ -7,7 +7,7 @@ const port = process.env.PORT || 7000;
 
 //middleware
 const corsOptions = {
-    origin: ["http://localhost:5173", "http://localhost:5174"],
+    origin: ["http://localhost:5173", "http://localhost:5174", "http://solosphere.surge.sh"],
     credentials: true,
     optionSuccessStatus: 200
 }
@@ -85,6 +85,23 @@ async function run() {
             const result = await jobsCollection.insertOne(jobData);
             res.send(result);
         });
+
+        // get all bids for a user by email
+        app.get('/my-bids/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email };
+            const result = await bidsCollection.find(query).toArray();
+            res.send(result);
+        });
+
+        //get all bid requests from db for a job owner
+        app.get('/bid-requests/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { buyerEmail: email };
+            const result = await bidsCollection.find(query).toArray();
+            res.send(result);
+        });
+        //updat
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
