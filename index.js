@@ -171,7 +171,42 @@ async function run() {
             const options = { upsert: true }
             const result = await bidsCollection.updateOne(query, updateDoc, options);
             res.send(result)
-        })
+        });
+        // get all jobs data from db for pagination
+        app.get('/all-jobs', async (req, res) => {
+            const size = parseFloat(req.query.size);
+            const page = parseFloat(req.query.page) - 1;
+            const filter = req.query.filter;
+            const search = req.query.search;
+            let query = {
+                job_title: {
+                    $regex: search, $options: 'i'
+                }
+            }
+            if (filter) query.category = filter;
+            const sort = req.query.sort;
+            let options = {}
+            if (sort) {
+                options = {
+                    sort: { deadline: sort === 'asc' ? 1 : -1 }
+                }
+            }
+            const result = await jobsCollection.find(query, options).skip(page * size).limit(size).toArray();
+            res.send(result)
+        });
+        //get all jobs data from db 
+        app.get('/jobs-count', async (req, res) => {
+            const filter = req.query.filter;
+            const search = req.query.search;
+            let query = {
+                job_title: {
+                    $regex: search, $options: 'i'
+                }
+            }
+            if (filter) query.category = filter;
+            const count = await jobsCollection.countDocuments(query);
+            res.send({ count })
+        });
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
