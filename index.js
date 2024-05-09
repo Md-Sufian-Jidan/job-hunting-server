@@ -1,19 +1,21 @@
 const express = require('express');
+require("dotenv").config();
+const { MongoClient, ServerApiVersion, ObjectId, MaxKey } = require('mongodb');
+const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-require("dotenv").config();
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 const port = process.env.PORT || 7000;
 
 //middleware
 const corsOptions = {
-    origin: ["http://localhost:5173", "http://localhost:5174", "http://solosphere.surge.sh"],
+    origin: ["http://localhost:5173"],
     credentials: true,
     optionSuccessStatus: 200
 }
-app.use(cors({ corsOptions }));
+app.use(cors(corsOptions))
 app.use(express.json());
+app.use(cookieParser())
 //----------------------------
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.qvjjrvn.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -35,10 +37,28 @@ async function run() {
 
         // jwt generator
         app.post('/jwt', async (req, res) => {
-            const user = req.user;
+            const user = req?.body;
+            console.log('dynamic token for this user --->', user);
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '7d' });
-            res.send(token)
+            console.log(token);
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: false,
+                sameSite: 'strict'
+            })
+                .send({ success: true })
         });
+        // Clear token on logout 
+        app.get('/logout', async (req, res) => {
+            const token = req.cookies;
+            res.clearCookie('token', token, {
+                httpOnly: true,
+                secure: false,
+                sameSite: 'strict',
+                maxAge : 0
+            })
+                .send({ success: true })
+        })
 
         // Get all jobs data from db
         app.get('/jobs', async (req, res) => {
