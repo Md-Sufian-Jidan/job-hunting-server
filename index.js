@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
@@ -31,6 +32,13 @@ async function run() {
         // await client.connect();
         const jobsCollection = client.db("soloSphere").collection("jobs");
         const bidsCollection = client.db("soloSphere").collection("bids");
+
+        // jwt generator
+        app.post('/jwt', async (req, res) => {
+            const user = req.user;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '7d' });
+            res.send(token)
+        });
 
         // Get all jobs data from db
         app.get('/jobs', async (req, res) => {
@@ -109,7 +117,7 @@ async function run() {
             const updateDoc = {
                 $set: status,
             };
-            const options = {upsert : true}
+            const options = { upsert: true }
             const result = await bidsCollection.updateOne(query, updateDoc, options);
             res.send(result)
         })
